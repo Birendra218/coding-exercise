@@ -1,39 +1,53 @@
 package com.example.clutchdemo.service;
 
-import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 import yahoofinance.Stock;
 import yahoofinance.YahooFinance;
 
+import javax.swing.text.html.Option;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
-@Component
+@Service
 public class StockService {
-    List<Stock> watchList = new ArrayList<>();
+    private  Map<String,Stock> stockMap=new HashMap<>();
 
-    public Stock getStock(String stockName) throws IOException {
-        Stock stock = YahooFinance.get(stockName);
-        stock.print();
-        return stock;
+
+    public Optional<Stock> retrieveStock(String stockName) throws IOException {
+       if(stockMap.get(stockName.toUpperCase().trim())!=null){
+           return Optional.of(stockMap.get(stockName.toUpperCase().trim()));
+       }
+        return Optional.empty();
+    }
+
+    public Optional<Stock> deleteStock(String stockName) throws IOException{
+        Stock valueStock=this.stockMap.remove(stockName.toUpperCase().trim());
+        if(valueStock==null){
+            return Optional.empty();
+        }
+       return  Optional.of(valueStock);
     }
 
 
-    public boolean addToWatch(String stockName) throws IOException {
-        Stock stock = YahooFinance.get(stockName);
-        if (stock == null) return false;
-        watchList.add(stock);
-        return true;
+    public Optional<Stock> addToWatch(String stockName) throws IOException {
+        Stock stock=YahooFinance.get(stockName);
+        if(stock!=null){
+            this.stockMap.put(stockName.trim().toUpperCase(),stock);
+            return Optional.of(stock);
+        }
+        return Optional.empty();
     }
+
     public List<Stock> refreshStocks() throws IOException {
-        this.watchList.stream().forEach(stock-> {
+        this.stockMap.values().stream().forEach(stock-> {
             try {
                 stock.setQuote(stock.getQuote(true));
             } catch (IOException e) {
                 e.printStackTrace();
             }
         });
-        return this.watchList;
+        return new ArrayList<Stock>(this.stockMap.values());
     }
+
+
 }
